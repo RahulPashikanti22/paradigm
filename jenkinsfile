@@ -8,14 +8,14 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/RahulPashikanti22/paradigm.git'
+                git url: 'https://github.com/RahulPashikanti22/paradigm.git', branch: 'main'
             }
         }
 
         stage('Build Images') {
             steps {
                 script {
-                    sh 'docker-compose build'
+                    sh "docker-compose -f ${COMPOSE_FILE} build"
                 }
             }
         }
@@ -23,8 +23,17 @@ pipeline {
         stage('Start Services') {
             steps {
                 script {
-                    sh 'docker-compose up -d'
+                    sh "docker-compose -f ${COMPOSE_FILE} up -d"
                 }
             }
         }
-     }
+    }
+
+    post {
+        always {
+            script {
+                echo "Pipeline execution finished."
+            }
+        }
+    }
+}
