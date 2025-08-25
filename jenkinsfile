@@ -2,69 +2,29 @@ pipeline {
     agent any
 
     environment {
-        NODE_VERSION = '18'
-        IMAGE_NAME = 'rahulpashikanti1999/nodejs/gatsby-app'
-        IMAGE_TAG = 'latest'
+        COMPOSE_FILE = 'docker-compose.yml'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main', url: 'https://github.com/your-repo.git'
             }
         }
 
-        stage('Install Node.js') {
+        stage('Build Images') {
             steps {
                 script {
-                    def nodeHome = tool name: "NodeJS-${NODE_VERSION}", type: 'NodeJSInstallation'
-                    env.PATH = "${nodeHome}/bin:${env.PATH}"
+                    sh 'docker-compose build'
                 }
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                sh 'npm install'
-            }
-        }
-
-        stage('Build Gatsby App') {
-            steps {
-                sh 'npm run build'
-            }
-        }
-
-        stage('Docker Build & Push') {
+        stage('Start Services') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
-                        sh """
-                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                        """
-                    }
+                    sh 'docker-compose up -d'
                 }
             }
         }
-
-        stage('Deploy with Docker') {
-            steps {
-                sh """
-                echo "Deploying container..."
-                docker rm -f gatsby-app || true
-                docker run -d --name gatsby-app -p 80:80 ${IMAGE_NAME}:${IMAGE_TAG}
-                """
-            }
-        }
-    }
-
-    post {
-        success {
-            echo 'Build, Docker image push, and deployment successful!'
-        }
-        failure {
-            echo 'Pipeline failed.'
-        }
-    }
-}
+     }
